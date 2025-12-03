@@ -24,7 +24,7 @@ public class Bill {
 
     private BigDecimal amount;
 
-    private Date createdAt;
+    private Date createdTime;
 
-    private Date updatedAt;
+    private Date updatedTime;
 }
