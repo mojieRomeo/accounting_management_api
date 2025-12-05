@@ -47,12 +47,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         resp.setTokenValue(StpUtil.getTokenInfo().getTokenValue());
         return resp;
 
-
-
-
-
-
-
     }
 }
 

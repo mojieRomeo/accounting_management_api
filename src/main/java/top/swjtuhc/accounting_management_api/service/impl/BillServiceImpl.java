@@ -30,11 +30,22 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill>
 
     @Override
     public PageResponse<BillPageResp> getBillPage(BillPageReq req) {
+
         Page<Bill> page = new Page<>(req.getCurrent(), req.getSize());
+
         LambdaQueryWrapper<Bill> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Bill::getKeyword,req.getKeyword());
+
+
+        String keyword = req.getKeyword();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            wrapper.like(Bill::getTitle, keyword);
+        }
+
+
         Page<Bill> result = page(page, wrapper);
         List<Bill> record = result.getRecords();
+
+
         List<BillPageResp> respList = record.stream().map(bill -> {
             BillPageResp resp = new BillPageResp();
             resp.setId(bill.getId());
@@ -46,10 +57,9 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill>
             resp.setUpdatedTime(bill.getUpdatedTime());
             return resp;
         }).collect(Collectors.toList());
-        if(respList.isEmpty()){
-            return new PageResponse<>(result, Collections.emptyList());
-        }
-        return new PageResponse<>(result,respList);
+
+
+        return new PageResponse<>(result, respList);
     }
 }
 
