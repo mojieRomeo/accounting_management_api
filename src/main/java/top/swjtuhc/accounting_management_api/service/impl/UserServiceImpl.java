@@ -17,6 +17,7 @@ import top.swjtuhc.accounting_management_api.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 
 import top.swjtuhc.accounting_management_api.util.ExceptionMessage;
+import top.swjtuhc.accounting_management_api.util.PasswordEncoder;
 import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 
 /**
@@ -29,25 +30,24 @@ import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     implements UserService{
 
+    private final UserMapper userMapper;
 
 
-
-    private static final BCryptPasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
     @Override
     public UserLoginResp login(UserLoginReq req) {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getUsername,req.getUsername());
-        if (baseMapper.selectCount(queryWrapper) > 1) {
+        if (userMapper.selectCount(queryWrapper) > 1) {
             throw new BusinessException(ExceptionMessage.USER_ALREADY_EXISTS);
-        } else if (baseMapper.selectCount(queryWrapper) == 0) {
+        } else if (userMapper.selectCount(queryWrapper) == 0) {
             throw new BusinessException(ExceptionMessage.USER_NOT_FOUND);
         }
-        User dbUser = baseMapper.selectOne(queryWrapper);
-        if (!PASSWORD_ENCODER.matches(req.getPassword(), dbUser.getPassword())) {
+        User user = userMapper.selectOne(queryWrapper);
+        if (!PasswordEncoder.matches(req.getPassword(), user.getPassword())) {
             throw new BusinessException(ExceptionMessage.PASSWORD_ERROR);
         }
-        StpUtil.login(dbUser.getId());
-        UserLoginResp resp=BeanUtil.copyProperties(dbUser, UserLoginResp.class);
+        StpUtil.login(user.getId());
+        UserLoginResp resp=BeanUtil.copyProperties(user, UserLoginResp.class);
         resp.setTokenName(StpUtil.getTokenInfo().getTokenName());
         resp.setTokenValue(StpUtil.getTokenInfo().getTokenValue());
         return resp;
