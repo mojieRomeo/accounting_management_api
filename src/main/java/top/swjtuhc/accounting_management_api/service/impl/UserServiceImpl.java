@@ -8,8 +8,11 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.util.StringUtils;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserLoginReq;
+import top.swjtuhc.accounting_management_api.controller.admin.req.UserRegisterReq;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
+import top.swjtuhc.accounting_management_api.controller.admin.resp.UserRegisterResp;
 import top.swjtuhc.accounting_management_api.entity.User;
 import top.swjtuhc.accounting_management_api.exception.BusinessException;
 import top.swjtuhc.accounting_management_api.service.UserService;
@@ -51,6 +54,39 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         resp.setTokenName(StpUtil.getTokenInfo().getTokenName());
         resp.setTokenValue(StpUtil.getTokenInfo().getTokenValue());
         return resp;
+    }
+
+    @Override
+    public UserRegisterResp register(UserRegisterReq req) {
+
+        if (!StringUtils.hasText(req.getUsername())) {
+            throw new BusinessException(ExceptionMessage.USER_EMPTY);
+        }
+        if (!StringUtils.hasText(req.getPassword())) {
+            throw new BusinessException(ExceptionMessage.PASSWORD_EMPTY);
+        }
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getUsername, req.getUsername());
+        if (this.count(queryWrapper) > 0) {
+            throw new BusinessException(ExceptionMessage.USER_ALREADY_EXISTS);
+        }
+        String encodedPassword = PasswordEncoder.encode(req.getPassword());
+        User user = new User();
+        user.setUsername(req.getUsername());
+        user.setPassword(encodedPassword);
+        boolean saveSuccess = this.save(user);
+        if (!saveSuccess) {
+            throw new BusinessException(ExceptionMessage.USER_REGISTER_FAIL);
+        }
+        User savedUser = this.getById(user.getId());
+        UserRegisterResp resp = new UserRegisterResp();
+        resp.setId(savedUser.getId());
+        resp.setUsername(savedUser.getUsername());
+        resp.setCreatedTime(savedUser.getCreatedTime());
+        resp.setUpdatedTime(savedUser.getUpdatedTime());
+
+        return resp;
+
     }
 }
 

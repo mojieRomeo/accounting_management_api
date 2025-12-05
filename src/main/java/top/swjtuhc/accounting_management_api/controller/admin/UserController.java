@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserLoginReq;
+import top.swjtuhc.accounting_management_api.controller.admin.req.UserRegisterReq;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
+import top.swjtuhc.accounting_management_api.controller.admin.resp.UserRegisterResp;
 import top.swjtuhc.accounting_management_api.service.UserService;
 import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 
@@ -24,5 +26,9 @@ public class UserController {
     public  ResponseEntity<UserLoginResp> login(@RequestBody UserLoginReq req){
        return ResponseEntity.ok(userService.login(req));
    }
+    @PostMapping("/register")
+    public  ResponseEntity<UserRegisterResp> register(@RequestBody UserRegisterReq req){
+        return ResponseEntity.ok(userService.register(req));
+    }
 
 }
