@@ -2,6 +2,7 @@ package top.swjtuhc.accounting_management_api.controller.admin;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,11 +18,11 @@ import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 @RequestMapping("/user")
 @RequiredArgsConstructor
 public class UserController {
+@Autowired UserService userService;
 
-    private final UserService userService;
-    @PostMapping("/login")
-    public ResponseEntity<UserLoginResp> login(@Validated @RequestBody UserLoginReq req) {
-        return ResponseEntity.ok(userService.login(req));
-    }
+   @PostMapping("/login")
+    public  ResponseEntity<UserLoginResp> login(@RequestBody UserLoginReq req){
+       return ResponseEntity.ok(userService.login(req));
+   }
 
 }
