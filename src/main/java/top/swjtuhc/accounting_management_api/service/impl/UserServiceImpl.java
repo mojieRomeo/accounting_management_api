@@ -27,31 +27,38 @@ import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     implements UserService{
-
-    private final UserMapper userMapper;
-
     @Override
     public UserLoginResp login(UserLoginReq req) {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(User::getUsername, req.getUsername());
-        if (userMapper.selectCount(queryWrapper) > 1) {
+        queryWrapper.eq(User::getUsername,req.getUsername());
+        if (baseMapper.selectCount(queryWrapper) > 1) {
             throw new BusinessException(ExceptionMessage.USER_ALREADY_EXISTS);
-        } else if (userMapper.selectCount(queryWrapper) == 0) {
+        } else if (baseMapper.selectCount(queryWrapper) == 0) {
             throw new BusinessException(ExceptionMessage.USER_NOT_FOUND);
         }
-        queryWrapper.eq(User::getPassword, req.getPassword());
-        if (userMapper.selectCount(queryWrapper) == 0) {
+        queryWrapper.eq(User::getPassword,req.getPassword());
+        if (baseMapper.selectCount(queryWrapper) == 0) {
             throw new BusinessException(ExceptionMessage.PASSWORD_ERROR);
         }
-        User user = userMapper.selectOne(queryWrapper);
+        User user=baseMapper.selectOne(queryWrapper);
         StpUtil.login(user.getId());
-        UserLoginResp resp = BeanUtil.copyProperties(user, UserLoginResp.class);
+        UserLoginResp resp=BeanUtil.copyProperties(user, UserLoginResp.class);
         resp.setTokenName(StpUtil.getTokenInfo().getTokenName());
         resp.setTokenValue(StpUtil.getTokenInfo().getTokenValue());
         return resp;
-    }
 
+
+
+
+
+
+
+    }
 }
+
+
+
+
 
 
 

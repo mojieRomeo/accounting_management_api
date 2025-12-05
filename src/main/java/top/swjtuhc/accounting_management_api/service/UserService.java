@@ -13,5 +13,6 @@ import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 */
 public interface UserService extends IService<User> {
 
+
     UserLoginResp login(UserLoginReq req);
 }
