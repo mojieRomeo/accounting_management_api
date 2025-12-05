@@ -6,7 +6,6 @@ import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserRegisterResp;
 import top.swjtuhc.accounting_management_api.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 
 /**
 * @author luojunjie

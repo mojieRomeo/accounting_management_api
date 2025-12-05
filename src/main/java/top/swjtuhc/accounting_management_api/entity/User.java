@@ -13,6 +13,7 @@ import lombok.Data;
 @TableName(value ="user")
 @Data
 public class User {
+
     @TableId(type = IdType.AUTO)
     private Long id;
 

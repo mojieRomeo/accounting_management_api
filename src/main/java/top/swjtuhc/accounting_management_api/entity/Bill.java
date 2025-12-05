@@ -14,6 +14,8 @@ import lombok.Data;
 @TableName(value ="bill")
 @Data
 public class Bill {
+
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     private Long userId;

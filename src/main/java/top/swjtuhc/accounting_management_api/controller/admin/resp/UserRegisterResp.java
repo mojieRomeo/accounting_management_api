@@ -2,13 +2,12 @@ package top.swjtuhc.accounting_management_api.controller.admin.resp;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-
-import java.util.Date;
 
 @Data
 public class UserRegisterResp {
-    @TableId(type = IdType.AUTO)
+
     private Long id;
 
     private String username;
@@ -17,11 +16,4 @@ public class UserRegisterResp {
 
     private Integer status;
 
-    private Date createdTime;
-
-    private Date updatedTime;
-
-    private String tokenName;
-
-    private String tokenValue;
 }

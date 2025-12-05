@@ -1,14 +1,10 @@
 package top.swjtuhc.accounting_management_api.service.impl;
 
-import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.util.StringUtils;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserLoginReq;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserRegisterReq;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
@@ -21,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import top.swjtuhc.accounting_management_api.util.ExceptionMessage;
 import top.swjtuhc.accounting_management_api.util.PasswordEncoder;
-import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 
 /**
 * @author luojunjie
@@ -40,9 +35,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public UserLoginResp login(UserLoginReq req) {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getUsername,req.getUsername());
-        if (userMapper.selectCount(queryWrapper) > 1) {
-            throw new BusinessException(ExceptionMessage.USER_ALREADY_EXISTS);
-        } else if (userMapper.selectCount(queryWrapper) == 0) {
+        if(!userMapper.exists(queryWrapper)){
             throw new BusinessException(ExceptionMessage.USER_NOT_FOUND);
         }
         User user = userMapper.selectOne(queryWrapper);
@@ -58,36 +51,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     public UserRegisterResp register(UserRegisterReq req) {
-
-        if (!StringUtils.hasText(req.getUsername())) {
-            throw new BusinessException(ExceptionMessage.USER_EMPTY);
-        }
-        if (!StringUtils.hasText(req.getPassword())) {
-            throw new BusinessException(ExceptionMessage.PASSWORD_EMPTY);
-        }
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(User::getUsername, req.getUsername());
-        if (this.count(queryWrapper) > 0) {
+        queryWrapper.eq(User::getUsername,req.getUsername());
+        if(userMapper.exists(queryWrapper)){
             throw new BusinessException(ExceptionMessage.USER_ALREADY_EXISTS);
         }
-        String encodedPassword = PasswordEncoder.encode(req.getPassword());
+        String password = PasswordEncoder.encode(req.getPassword());
         User user = new User();
         user.setUsername(req.getUsername());
-        user.setPassword(encodedPassword);
-        boolean saveSuccess = this.save(user);
-        if (!saveSuccess) {
-            throw new BusinessException(ExceptionMessage.USER_REGISTER_FAIL);
-        }
-        User savedUser = this.getById(user.getId());
-        UserRegisterResp resp = new UserRegisterResp();
-        resp.setId(savedUser.getId());
-        resp.setUsername(savedUser.getUsername());
-        resp.setCreatedTime(savedUser.getCreatedTime());
-        resp.setUpdatedTime(savedUser.getUpdatedTime());
-
+        user.setPassword(password);
+        user.setStatus(1);
+        user.setRole(0);
+        userMapper.insert(user);
+        UserRegisterResp resp = BeanUtil.copyProperties(user, UserRegisterResp.class);
         return resp;
 
     }
+
 }
 
 
