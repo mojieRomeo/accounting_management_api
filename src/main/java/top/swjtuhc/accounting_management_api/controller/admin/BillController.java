@@ -19,6 +19,6 @@ public class BillController {
     @PostMapping("/page")
     public ResponseEntity<PageResponse<BillPageResp>> getBillPage(@RequestBody BillPageReq req){
         return ResponseEntity.ok(billService.getBillPage(req ));
-
     }
+
 }
