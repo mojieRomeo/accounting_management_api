@@ -73,7 +73,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUsername(req.getUsername());
         user.setPassword(password);
         user.setStatus(StatusEnum.ENABLE.getCode());
-        user.setRole(UserRoleEnum.USER.getCode());
+        user.setRole(req.getRole());
         userMapper.insert(user);
         return BeanUtil.copyProperties(user, UserRegisterResp.class);
 
