@@ -17,7 +17,5 @@ public interface UserService extends IService<User> {
 
     UserLoginResp login(UserLoginReq req);
 
-    UserRegisterResp userRegister(UserRegisterReq req);
-
-    UserRegisterResp adminRegister(UserRegisterReq req);
+    UserRegisterResp register(UserRegisterReq req);
 }

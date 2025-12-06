@@ -62,7 +62,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public UserRegisterResp userRegister(UserRegisterReq req) {
+    public UserRegisterResp register(UserRegisterReq req) {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getUsername,req.getUsername());
         if(userMapper.exists(queryWrapper)){
@@ -79,22 +79,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     }
 
-    @Override
-    public UserRegisterResp adminRegister(UserRegisterReq req) {
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(User::getUsername,req.getUsername());
-        if(userMapper.exists(queryWrapper)){
-            throw new BusinessException(ExceptionMessage.USER_ALREADY_EXISTS);
-        }
-        String password = PasswordEncoder.encode(req.getPassword());
-        User user = new User();
-        user.setUsername(req.getUsername());
-        user.setPassword(password);
-        user.setStatus(StatusEnum.ENABLE.getCode());
-        user.setRole(UserRoleEnum.ADMIN.getCode());
-        userMapper.insert(user);
-        return BeanUtil.copyProperties(user, UserRegisterResp.class);
-    }
 
 }
 
