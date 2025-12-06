@@ -64,6 +64,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setRole(0);
         userMapper.insert(user);
         UserRegisterResp resp = BeanUtil.copyProperties(user, UserRegisterResp.class);
+
         return resp;
 
     }
