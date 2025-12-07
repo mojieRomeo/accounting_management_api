@@ -28,8 +28,9 @@ public class UserController {
     public  ResponseEntity<UserRegisterResp> register(@RequestBody UserRegisterReq req){
         return ResponseEntity.ok(userService.register(req));
     }
-    @GetMapping("/logout")
-    public  ResponseEntity logout(){
+    @PostMapping ("/logout")
+    public  ResponseEntity<?> logout(){
+        //StpUtil.logout只会清空satoken的session，对前段localStorage和后段返回的resp无影响
         StpUtil.logout();
         return ResponseEntity.ok();
 
