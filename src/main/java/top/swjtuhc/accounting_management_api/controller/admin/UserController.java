@@ -1,12 +1,10 @@
 package top.swjtuhc.accounting_management_api.controller.admin;
 
+import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserLoginReq;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserRegisterReq;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
@@ -30,7 +28,12 @@ public class UserController {
     public  ResponseEntity<UserRegisterResp> register(@RequestBody UserRegisterReq req){
         return ResponseEntity.ok(userService.register(req));
     }
+    @GetMapping("/logout")
+    public  ResponseEntity logout(){
+        StpUtil.logout();
+        return ResponseEntity.ok();
 
+    }
 
 
 }
