@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import top.swjtuhc.accounting_management_api.controller.admin.req.AdminPageReq;
+import top.swjtuhc.accounting_management_api.controller.admin.req.UserAddReq;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserLoginReq;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserRegisterReq;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.AdminPageResp;
@@ -113,6 +114,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         return new PageResponse<>(result, respList);
 
+    }
+
+    @Override
+    public void addUser(UserAddReq req) {
+        SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
+        if(session.get("role").equals(UserRoleEnum.ADMIN.getCode())){
+            if(req.getRole().equals(UserRoleEnum.USER.getCode())){
+                User user = BeanUtil.copyProperties(req,User.class);
+                user.setPassword(PasswordEncoder.encode(req.getPassword()));
+                save(user);
+            }
+            System.out.println(ExceptionMessage.NO_PERMISSION_ADD);
+            throw new BusinessException(ExceptionMessage.NO_PERMISSION_ADD);
+        } else if (session.get("role").equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+            User user = BeanUtil.copyProperties(req,User.class);
+            user.setPassword(PasswordEncoder.encode(req.getPassword()));
+            save(user);
+        }
     }
 
 
