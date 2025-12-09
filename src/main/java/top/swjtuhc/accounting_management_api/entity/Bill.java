@@ -26,8 +26,6 @@ public class Bill {
 
     private BigDecimal amount;
 
-
-
     private Date createdTime;
 
     private Date updatedTime;

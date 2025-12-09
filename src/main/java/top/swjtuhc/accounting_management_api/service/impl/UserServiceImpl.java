@@ -5,10 +5,13 @@ import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import top.swjtuhc.accounting_management_api.controller.admin.req.AdminPageReq;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserLoginReq;
 import top.swjtuhc.accounting_management_api.controller.admin.req.UserRegisterReq;
+import top.swjtuhc.accounting_management_api.controller.admin.resp.AdminPageResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserRegisterResp;
 import top.swjtuhc.accounting_management_api.entity.User;
@@ -20,7 +23,12 @@ import top.swjtuhc.accounting_management_api.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 
 import top.swjtuhc.accounting_management_api.util.ExceptionMessage;
+import top.swjtuhc.accounting_management_api.util.PageResponse;
 import top.swjtuhc.accounting_management_api.util.PasswordEncoder;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
 * @author luojunjie
@@ -46,11 +54,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!PasswordEncoder.matches(req.getPassword(), user.getPassword())) {
             throw new BusinessException(ExceptionMessage.PASSWORD_ERROR);
         }
+        /*
+        StpUtil.login方法会自动生成token，并完成token<——>user.getId(loginId)的绑定
+        这让后面想要获取当前登录人信息的时候可以直接通过getLoginIdAsLong()获取到
+         */
         StpUtil.login(user.getId());
 
-        //把登录后生成的token值以及user的信息存入satoken自带的session
+        //把登录后生成的token值以及user的信息存入sa_token自带的session
         SaSession session = StpUtil.getSessionByLoginId(user.getId());
         session.set("userId",user.getId());
+        session.set("role",user.getRole());
         session.set("userName",user.getUsername());
         session.set("tokenName",StpUtil.getTokenName());
         session.set("tokenValue",StpUtil.getTokenValue());
@@ -79,6 +92,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     }
 
+    @Override
+    public PageResponse<AdminPageResp> adminPage(AdminPageReq req) {
+        //getLoginIdAsLong()在StpUtil.login方法执行后就获取到了
+        SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
+        Page<User> page = new Page<>(req.getCurrent(), req.getSize());
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getStatus,StatusEnum.ENABLE.getCode());
+        wrapper.orderByDesc(User::getId);
+        if(session.get("role").equals(UserRoleEnum.ADMIN.getCode())){
+            wrapper.eq(User::getRole,UserRoleEnum.USER.getCode());
+        } else if (session.get("role").equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+            wrapper.in(User::getRole,UserRoleEnum.USER.getCode(),UserRoleEnum.ADMIN.getCode());
+        }
+        Page<User> result = page(page,wrapper);
+        List<User> records = result.getRecords();
+        List<AdminPageResp> respList = BeanUtil.copyToList(records, AdminPageResp.class);
+        if(respList.isEmpty()){
+            return new PageResponse<>(result, Collections.emptyList());
+        }
+        return new PageResponse<>(result, respList);
+
+    }
 
 
 }
