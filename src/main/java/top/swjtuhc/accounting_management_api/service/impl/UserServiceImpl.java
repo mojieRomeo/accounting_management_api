@@ -196,6 +196,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
     }
 
+    @Override
+    public void deleteUser(UserDeleteReq req) {
+        SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
+        if (session.get("role").equals(UserRoleEnum.ADMIN.getCode())){
+            if (req.getRole().equals(UserRoleEnum.USER.getCode())){
+                userMapper.deleteById(req.getId());
+            }
+
+        } else if (session.get("role").equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+            userMapper.deleteById(req.getId());
+
+        }
+        else {
+            throw new BusinessException(ExceptionMessage.NO_PERMISSION_UPDATE);
+        }
+
+    }
+
 
 }
 

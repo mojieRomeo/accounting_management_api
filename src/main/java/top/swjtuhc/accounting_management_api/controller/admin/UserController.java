@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.annotations.Delete;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import top.swjtuhc.accounting_management_api.controller.admin.req.*;
@@ -53,6 +54,12 @@ public class UserController {
         userService.updateUser(req);
         return ResponseEntity.ok();
     }
+    @DeleteMapping("/deleteUser")
+    public ResponseEntity<?> deleteUser(@RequestBody UserDeleteReq req){
+        userService.deleteUser(req);
+        return ResponseEntity.ok();
+    }
+
 
 
 
