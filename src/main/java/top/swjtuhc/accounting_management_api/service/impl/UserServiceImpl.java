@@ -5,13 +5,11 @@ import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
-import top.swjtuhc.accounting_management_api.controller.admin.req.AdminPageReq;
-import top.swjtuhc.accounting_management_api.controller.admin.req.UserAddReq;
-import top.swjtuhc.accounting_management_api.controller.admin.req.UserLoginReq;
-import top.swjtuhc.accounting_management_api.controller.admin.req.UserRegisterReq;
+import top.swjtuhc.accounting_management_api.controller.admin.req.*;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.AdminPageResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserRegisterResp;
@@ -134,6 +132,67 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             User user = BeanUtil.copyProperties(req,User.class);
             user.setPassword(PasswordEncoder.encode(req.getPassword()));
             save(user);
+        }
+    }
+
+    @Override
+    public void updateUser(UserSaveReq req) {
+        // 获取当前会话
+        SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
+
+        // ADMIN 权限逻辑
+        if (session.get("role").equals(UserRoleEnum.ADMIN.getCode())){
+            // ADMIN 只能更新普通用户
+            if(req.getRole().equals(UserRoleEnum.USER.getCode())){
+                User user = BeanUtil.copyProperties(req,User.class);
+
+                // 密码加密
+                if (user.getPassword() != null) {
+                    user.setPassword(PasswordEncoder.encode(user.getPassword()));
+                }
+
+                LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
+                updateWrapper.eq(User::getId, req.getId())
+                        .set(user.getUsername() != null, User::getUsername, user.getUsername())
+                        .set(user.getPassword() != null, User::getPassword, user.getPassword())
+                        .set(user.getRole() != null, User::getRole, user.getRole())
+                        .set(user.getStatus() != null, User::getStatus, user.getStatus());
+
+                int rows = userMapper.update(null, updateWrapper);
+
+                if (rows == 0) {
+                    throw new BusinessException(ExceptionMessage.USER_UPDATE_FAIL);
+                }
+            } else {
+                // ADMIN 尝试更新非普通用户，抛出异常
+                throw new BusinessException(ExceptionMessage.NO_PERMISSION_UPDATE);
+            }
+        }
+        // SUPER_ADMIN 权限逻辑
+        else if (session.get("role").equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+            User user = BeanUtil.copyProperties(req,User.class);
+
+            // 密码加密
+            if (user.getPassword() != null) {
+                user.setPassword(PasswordEncoder.encode(user.getPassword()));
+            }
+
+            LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
+            updateWrapper.eq(User::getId, req.getId())  // 修正：使用 req.getId()
+                    .set(user.getUsername() != null, User::getUsername, user.getUsername())
+                    .set(user.getPassword() != null, User::getPassword, user.getPassword())
+                    .set(user.getRole() != null, User::getRole, user.getRole())
+                    .set(user.getStatus() != null, User::getStatus, user.getStatus());
+
+            int rows = userMapper.update(null, updateWrapper);
+
+            if (rows == 0) {
+                throw new BusinessException(ExceptionMessage.USER_UPDATE_FAIL);
+            }
+        }
+        // 非管理员用户
+        else {
+            throw new BusinessException(ExceptionMessage.NO_PERMISSION_UPDATE);
         }
     }
 
