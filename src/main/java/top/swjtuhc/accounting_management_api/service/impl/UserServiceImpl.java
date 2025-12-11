@@ -101,9 +101,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getStatus,StatusEnum.ENABLE.getCode());
         wrapper.orderByDesc(User::getId);
-        if(session.get("role").equals(UserRoleEnum.ADMIN.getCode())){
+        Integer currentRole = (Integer) session.get("role");
+        if(currentRole.equals(UserRoleEnum.ADMIN.getCode())){
             wrapper.eq(User::getRole,UserRoleEnum.USER.getCode());
-        } else if (session.get("role").equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+        } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
             wrapper.in(User::getRole,UserRoleEnum.USER.getCode(),UserRoleEnum.ADMIN.getCode());
         }
         Page<User> result = page(page,wrapper);
@@ -119,15 +120,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public void addUser(UserAddReq req) {
         SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
-        if(session.get("role").equals(UserRoleEnum.ADMIN.getCode())){
+        //
+        Integer currentRole = (Integer) session.get("role");
+        if(currentRole.equals(UserRoleEnum.ADMIN.getCode())){
             if(req.getRole().equals(UserRoleEnum.USER.getCode())){
                 User user = BeanUtil.copyProperties(req,User.class);
                 user.setPassword(PasswordEncoder.encode(req.getPassword()));
                 save(user);
+            }else{
+                throw new BusinessException(ExceptionMessage.NO_PERMISSION_ADD);
             }
-            System.out.println(ExceptionMessage.NO_PERMISSION_ADD);
-            throw new BusinessException(ExceptionMessage.NO_PERMISSION_ADD);
-        } else if (session.get("role").equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+        } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
             User user = BeanUtil.copyProperties(req,User.class);
             user.setPassword(PasswordEncoder.encode(req.getPassword()));
             save(user);
