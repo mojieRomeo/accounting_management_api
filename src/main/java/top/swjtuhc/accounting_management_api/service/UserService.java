@@ -1,9 +1,6 @@
 package top.swjtuhc.accounting_management_api.service;
 
-import top.swjtuhc.accounting_management_api.controller.admin.req.AdminPageReq;
-import top.swjtuhc.accounting_management_api.controller.admin.req.UserAddReq;
-import top.swjtuhc.accounting_management_api.controller.admin.req.UserLoginReq;
-import top.swjtuhc.accounting_management_api.controller.admin.req.UserRegisterReq;
+import top.swjtuhc.accounting_management_api.controller.admin.req.*;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.AdminPageResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserRegisterResp;
@@ -28,4 +25,6 @@ public interface UserService extends IService<User> {
 
 
     void addUser(UserAddReq req);
+
+    void updateUser(UserSaveReq req);
 }

@@ -6,10 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import top.swjtuhc.accounting_management_api.controller.admin.req.UserAddReq;
-import top.swjtuhc.accounting_management_api.controller.admin.req.UserLoginReq;
-import top.swjtuhc.accounting_management_api.controller.admin.req.AdminPageReq;
-import top.swjtuhc.accounting_management_api.controller.admin.req.UserRegisterReq;
+import top.swjtuhc.accounting_management_api.controller.admin.req.*;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.AdminPageResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserRegisterResp;
@@ -51,6 +48,12 @@ public class UserController {
         userService.addUser(req);
         return ResponseEntity.ok();
     }
+    @PutMapping("/updateUser")
+    public ResponseEntity<?> updateUser(@RequestBody UserSaveReq req){
+        userService.updateUser(req);
+        return ResponseEntity.ok();
+    }
+
 
 
 }

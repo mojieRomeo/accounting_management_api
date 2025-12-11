@@ -10,6 +10,8 @@ public class ExceptionMessage {
 
     //没有权限添加
     public static final String NO_PERMISSION_ADD = "没有权限添加";
+    public static final String NO_PERMISSION_UPDATE = "没有权限修改";
+    public static final String USER_UPDATE_FAIL = "更新失败";
 
 }
 
