@@ -1,7 +1,6 @@
 package top.swjtuhc.accounting_management_api.service.impl;
 
 import cn.dev33.satoken.session.SaSession;
-import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -25,7 +24,6 @@ import top.swjtuhc.accounting_management_api.util.ExceptionMessage;
 import top.swjtuhc.accounting_management_api.util.PageResponse;
 import top.swjtuhc.accounting_management_api.util.PasswordEncoder;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -136,63 +134,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public void updateUser(UserSaveReq req) {
-        // 获取当前会话
+    public void updateUser(UserUpdateReq req) {
         SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
-
-        // ADMIN 权限逻辑
-        if (session.get("role").equals(UserRoleEnum.ADMIN.getCode())){
-            // ADMIN 只能更新普通用户
-            if(req.getRole().equals(UserRoleEnum.USER.getCode())){
-                User user = BeanUtil.copyProperties(req,User.class);
-
-                // 密码加密
-                if (user.getPassword() != null) {
-                    user.setPassword(PasswordEncoder.encode(user.getPassword()));
-                }
-
-                LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
-                updateWrapper.eq(User::getId, req.getId())
-                        .set(user.getUsername() != null, User::getUsername, user.getUsername())
-                        .set(user.getPassword() != null, User::getPassword, user.getPassword())
-                        .set(user.getRole() != null, User::getRole, user.getRole())
-                        .set(user.getStatus() != null, User::getStatus, user.getStatus());
-
-                int rows = userMapper.update(null, updateWrapper);
-
-                if (rows == 0) {
-                    throw new BusinessException(ExceptionMessage.USER_UPDATE_FAIL);
-                }
+        Integer currentRole = (Integer) session.get("role");
+        if (currentRole.equals(UserRoleEnum.ADMIN.getCode())) {
+            if (req.getRole().equals(UserRoleEnum.USER.getCode())) {
+                User user = BeanUtil.copyProperties(req, User.class);
+                user.setPassword(PasswordEncoder.encode(user.getPassword()));
+                userMapper.updateById(user);
             } else {
-                // ADMIN 尝试更新非普通用户，抛出异常
                 throw new BusinessException(ExceptionMessage.NO_PERMISSION_UPDATE);
             }
         }
-        // SUPER_ADMIN 权限逻辑
-        else if (session.get("role").equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
-            User user = BeanUtil.copyProperties(req,User.class);
-
-            // 密码加密
-            if (user.getPassword() != null) {
-                user.setPassword(PasswordEncoder.encode(user.getPassword()));
-            }
-
-            LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
-            updateWrapper.eq(User::getId, req.getId())  // 修正：使用 req.getId()
-                    .set(user.getUsername() != null, User::getUsername, user.getUsername())
-                    .set(user.getPassword() != null, User::getPassword, user.getPassword())
-                    .set(user.getRole() != null, User::getRole, user.getRole())
-                    .set(user.getStatus() != null, User::getStatus, user.getStatus());
-
-            int rows = userMapper.update(null, updateWrapper);
-
-            if (rows == 0) {
-                throw new BusinessException(ExceptionMessage.USER_UPDATE_FAIL);
-            }
-        }
-        // 非管理员用户
-        else {
-            throw new BusinessException(ExceptionMessage.NO_PERMISSION_UPDATE);
+        else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+            User user = BeanUtil.copyProperties(req, User.class);
+            user.setPassword(PasswordEncoder.encode(user.getPassword()));
+            userMapper.updateById(user);
         }
     }
 

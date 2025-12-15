@@ -3,7 +3,8 @@ package top.swjtuhc.accounting_management_api.controller.admin.req;
 import lombok.Data;
 
 @Data
-public class UserSaveReq {
+public class UserUpdateReq {
+
     private Long id;
 
     private String username;
@@ -11,6 +12,4 @@ public class UserSaveReq {
     private String password;
 
     private Integer role;
-
-    private Integer status;
 }

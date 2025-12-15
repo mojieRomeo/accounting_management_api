@@ -1,10 +1,8 @@
 package top.swjtuhc.accounting_management_api.controller.admin;
 
-import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.annotations.Delete;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import top.swjtuhc.accounting_management_api.controller.admin.req.*;
@@ -20,7 +18,8 @@ import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 @RequestMapping("/user")
 @RequiredArgsConstructor
 public class UserController {
-@Autowired UserService userService;
+
+    private final UserService userService;
 
    @PostMapping("/login")
     public  ResponseEntity<UserLoginResp> login(@RequestBody UserLoginReq req){
@@ -49,8 +48,8 @@ public class UserController {
         userService.addUser(req);
         return ResponseEntity.ok();
     }
-    @PutMapping("/updateUser")
-    public ResponseEntity<?> updateUser(@RequestBody UserSaveReq req){
+    @PostMapping("/updateUser")
+    public ResponseEntity<?> updateUser(@RequestBody UserUpdateReq req){
         userService.updateUser(req);
         return ResponseEntity.ok();
     }
