@@ -140,15 +140,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (currentRole.equals(UserRoleEnum.ADMIN.getCode())) {
             if (req.getRole().equals(UserRoleEnum.USER.getCode())) {
                 User user = BeanUtil.copyProperties(req, User.class);
-                user.setPassword(PasswordEncoder.encode(user.getPassword()));
+                if(!req.getPassword().isEmpty()){
+                    user.setPassword(PasswordEncoder.encode(req.getPassword()));
+                }else{
+                    throw new BusinessException(ExceptionMessage.PASSWORD_EMPTY);
+                }
                 userMapper.updateById(user);
-            } else {
-                throw new BusinessException(ExceptionMessage.NO_PERMISSION_UPDATE);
             }
-        }
-        else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+        } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
             User user = BeanUtil.copyProperties(req, User.class);
-            user.setPassword(PasswordEncoder.encode(user.getPassword()));
+            if(!req.getPassword().isEmpty()){
+                user.setPassword(PasswordEncoder.encode(req.getPassword()));
+            }else{
+                throw new BusinessException(ExceptionMessage.PASSWORD_EMPTY);
+            }
             userMapper.updateById(user);
         }
     }
@@ -156,17 +161,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public void deleteUser(UserDeleteReq req) {
         SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
-        if (session.get("role").equals(UserRoleEnum.ADMIN.getCode())){
+        Integer currentRole = (Integer) session.get("role");
+        if (currentRole.equals(UserRoleEnum.ADMIN.getCode())){
             if (req.getRole().equals(UserRoleEnum.USER.getCode())){
                 userMapper.deleteById(req.getId());
             }
 
-        } else if (session.get("role").equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+        } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
             userMapper.deleteById(req.getId());
 
-        }
-        else {
-            throw new BusinessException(ExceptionMessage.NO_PERMISSION_UPDATE);
         }
 
     }
