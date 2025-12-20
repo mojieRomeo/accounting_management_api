@@ -6,4 +6,5 @@ import top.swjtuhc.accounting_management_api.util.PageRequest;
 @Data
 public class AdminPageReq extends PageRequest {
 
+    private String keyword;
 }

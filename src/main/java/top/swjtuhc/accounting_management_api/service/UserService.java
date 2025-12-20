@@ -29,5 +29,5 @@ public interface UserService extends IService<User> {
     void updateUser(UserUpdateReq req);
 
 
-    void deleteUser(UserDeleteReq req);
+    void deleteUser(Long id);
 }

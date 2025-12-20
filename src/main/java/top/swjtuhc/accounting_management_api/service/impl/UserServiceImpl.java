@@ -95,6 +95,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
         Page<User> page = new Page<>(req.getCurrent(), req.getSize());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        if(!req.getKeyword().isEmpty()){
+            wrapper.like(User::getUsername,req.getKeyword()).or().like(User::getId,req.getKeyword());
+        }
         wrapper.eq(User::getStatus,StatusEnum.ENABLE.getCode());
         wrapper.orderByDesc(User::getId);
         Integer currentRole = (Integer) session.get("role");
@@ -116,16 +119,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public void addUser(UserAddReq req) {
         SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
-        //
         Integer currentRole = (Integer) session.get("role");
         if(currentRole.equals(UserRoleEnum.ADMIN.getCode())){
-            if(req.getRole().equals(UserRoleEnum.USER.getCode())){
-                User user = BeanUtil.copyProperties(req,User.class);
-                user.setPassword(PasswordEncoder.encode(req.getPassword()));
-                save(user);
-            }else{
-                throw new BusinessException(ExceptionMessage.NO_PERMISSION_ADD);
-            }
+            User user = BeanUtil.copyProperties(req,User.class);
+            user.setPassword(PasswordEncoder.encode(req.getPassword()));
+            user.setRole(UserRoleEnum.USER.getCode());
+            save(user);
         } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
             User user = BeanUtil.copyProperties(req,User.class);
             user.setPassword(PasswordEncoder.encode(req.getPassword()));
@@ -159,19 +158,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public void deleteUser(UserDeleteReq req) {
-        SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
-        Integer currentRole = (Integer) session.get("role");
-        if (currentRole.equals(UserRoleEnum.ADMIN.getCode())){
-            if (req.getRole().equals(UserRoleEnum.USER.getCode())){
-                userMapper.deleteById(req.getId());
-            }
-
-        } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
-            userMapper.deleteById(req.getId());
-
-        }
-
+    public void deleteUser(Long id) {
+        userMapper.deleteById(id);
     }
 
 
