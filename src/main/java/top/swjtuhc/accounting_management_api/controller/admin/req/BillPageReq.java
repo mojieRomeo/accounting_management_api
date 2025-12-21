@@ -8,16 +8,4 @@ import java.math.BigDecimal;
 @Data
 public class BillPageReq extends PageRequest {
 
-    private Long id;
-
-    private Long userId;
-
-    private String title;
-
-    private Integer type;
-
-    private BigDecimal amount;
-
-    private String keyword;
-
 }

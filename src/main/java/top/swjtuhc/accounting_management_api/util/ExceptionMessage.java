@@ -13,5 +13,8 @@ public class ExceptionMessage {
     public static final String NO_PERMISSION_UPDATE = "没有权限修改";
     public static final String USER_UPDATE_FAIL = "更新失败";
 
+    //没有权限查看
+    public static final String NO_PERMISSION_VIEW = "没有权限查看";
+
 }
 

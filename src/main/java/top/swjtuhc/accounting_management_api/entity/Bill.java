@@ -1,9 +1,7 @@
 package top.swjtuhc.accounting_management_api.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.math.BigDecimal;
 import java.util.Date;
 import lombok.Data;
@@ -22,11 +20,15 @@ public class Bill {
 
     private String title;
 
-    private Integer type;
+    private String costType;
 
     private BigDecimal amount;
 
+    private Integer type;
+
+    @TableField(fill = FieldFill.INSERT)
     private Date createdTime;
 
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private Date updatedTime;
 }

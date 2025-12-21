@@ -15,10 +15,11 @@ import top.swjtuhc.accounting_management_api.util.ResponseEntity;
 @RequestMapping("/bill")
 @RequiredArgsConstructor
 public class BillController {
-    @Autowired BillService billService;
-    @PostMapping("/page")
+
+    private final BillService billService;
+    @PostMapping("/getBillPage")
     public ResponseEntity<PageResponse<BillPageResp>> getBillPage(@RequestBody BillPageReq req){
-        return ResponseEntity.ok(billService.getBillPage(req ));
+        return ResponseEntity.ok(billService.getBillPage(req));
     }
 
 }

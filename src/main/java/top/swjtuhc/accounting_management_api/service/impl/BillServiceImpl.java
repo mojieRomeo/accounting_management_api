@@ -1,15 +1,24 @@
 package top.swjtuhc.accounting_management_api.service.impl;
 
+import cn.dev33.satoken.session.SaSession;
+import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
 import top.swjtuhc.accounting_management_api.controller.admin.req.BillPageReq;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.BillPageResp;
 import top.swjtuhc.accounting_management_api.entity.Bill;
+import top.swjtuhc.accounting_management_api.entity.User;
+import top.swjtuhc.accounting_management_api.enums.UserRoleEnum;
+import top.swjtuhc.accounting_management_api.exception.BusinessException;
+import top.swjtuhc.accounting_management_api.mapper.UserMapper;
 import top.swjtuhc.accounting_management_api.service.BillService;
 import top.swjtuhc.accounting_management_api.mapper.BillMapper;
 import org.springframework.stereotype.Service;
+import top.swjtuhc.accounting_management_api.util.ExceptionMessage;
 import top.swjtuhc.accounting_management_api.util.PageRequest;
 import top.swjtuhc.accounting_management_api.util.PageResponse;
 
@@ -24,41 +33,34 @@ import java.util.stream.Collectors;
 * @createDate 2025-11-30 15:10:18
 */
 @Service
+@RequiredArgsConstructor
 public class BillServiceImpl extends ServiceImpl<BillMapper, Bill>
     implements BillService{
+
+    private final BillMapper billMapper;
+    private final UserMapper userMapper;
 
 
     @Override
     public PageResponse<BillPageResp> getBillPage(BillPageReq req) {
-
         Page<Bill> page = new Page<>(req.getCurrent(), req.getSize());
-
+        SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
+        Integer currentRole = (Integer) session.get("role");
         LambdaQueryWrapper<Bill> wrapper = new LambdaQueryWrapper<>();
-
-
-        String keyword = req.getKeyword();
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            wrapper.like(Bill::getTitle, keyword);
+        wrapper.orderByDesc(Bill::getId);
+        if(currentRole.equals(UserRoleEnum.ADMIN.getCode())){
+            List<Long> userIds = userMapper.selectList(new LambdaQueryWrapper<User>().eq(User::getRole,UserRoleEnum.USER.getCode())).stream().map(User::getId).collect(Collectors.toList());
+            wrapper.in(Bill::getUserId,userIds);
+        } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+            List<Long> userIds = userMapper.selectList(new LambdaQueryWrapper<User>().in(User::getRole,UserRoleEnum.USER.getCode(),UserRoleEnum.ADMIN.getCode())).stream().map(User::getId).collect(Collectors.toList());
+            wrapper.in(Bill::getUserId,userIds);
         }
-
-
         Page<Bill> result = page(page, wrapper);
         List<Bill> record = result.getRecords();
-
-
-        List<BillPageResp> respList = record.stream().map(bill -> {
-            BillPageResp resp = new BillPageResp();
-            resp.setId(bill.getId());
-            resp.setUserId(bill.getUserId());
-            resp.setTitle(bill.getTitle());
-            resp.setType(bill.getType());
-            resp.setAmount(bill.getAmount());
-            resp.setCreatedTime(bill.getCreatedTime());
-            resp.setUpdatedTime(bill.getUpdatedTime());
-            return resp;
-        }).collect(Collectors.toList());
-
-
+        List<BillPageResp> respList = BeanUtil.copyToList(record, BillPageResp.class);
+        if(respList.isEmpty()){
+            return new PageResponse<>(result,Collections.emptyList());
+        }
         return new PageResponse<>(result, respList);
     }
 }
