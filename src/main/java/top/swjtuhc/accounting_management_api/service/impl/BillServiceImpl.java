@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import top.swjtuhc.accounting_management_api.controller.admin.req.BillPageReq;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.BillPageResp;
 import top.swjtuhc.accounting_management_api.entity.Bill;
@@ -51,9 +52,15 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill>
         if(currentRole.equals(UserRoleEnum.ADMIN.getCode())){
             List<Long> userIds = userMapper.selectList(new LambdaQueryWrapper<User>().eq(User::getRole,UserRoleEnum.USER.getCode())).stream().map(User::getId).collect(Collectors.toList());
             wrapper.in(Bill::getUserId,userIds);
+            if(StringUtils.hasText(req.getCostType())){
+                wrapper.eq(Bill::getCostType,req.getCostType());
+            }
         } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
             List<Long> userIds = userMapper.selectList(new LambdaQueryWrapper<User>().in(User::getRole,UserRoleEnum.USER.getCode(),UserRoleEnum.ADMIN.getCode())).stream().map(User::getId).collect(Collectors.toList());
             wrapper.in(Bill::getUserId,userIds);
+            if(StringUtils.hasText(req.getCostType())){
+                wrapper.eq(Bill::getCostType,req.getCostType());
+            }
         }
         Page<Bill> result = page(page, wrapper);
         List<Bill> record = result.getRecords();

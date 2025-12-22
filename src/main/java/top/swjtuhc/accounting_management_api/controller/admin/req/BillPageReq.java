@@ -8,4 +8,6 @@ import java.math.BigDecimal;
 @Data
 public class BillPageReq extends PageRequest {
 
+    private String costType;
+
 }
