@@ -52,6 +52,7 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill>
         if(currentRole.equals(UserRoleEnum.ADMIN.getCode())){
             List<Long> userIds = userMapper.selectList(new LambdaQueryWrapper<User>().eq(User::getRole,UserRoleEnum.USER.getCode())).stream().map(User::getId).collect(Collectors.toList());
             wrapper.in(Bill::getUserId,userIds);
+            //StringUtils.hasText(req.getCostType())意思为req.getCostType()有值就执行，null，“”，“ ”都为false
             if(StringUtils.hasText(req.getCostType())){
                 wrapper.eq(Bill::getCostType,req.getCostType());
             }

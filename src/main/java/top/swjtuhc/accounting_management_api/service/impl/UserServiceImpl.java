@@ -57,7 +57,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
          */
         StpUtil.login(user.getId());
 
-        //把登录后生成的token值以及user的信息存入sa_token自带的session
+        //把登录后生成的token值以及user的信息存入sa_token自带的session，这里是jvm框架自带的内存机制，配置redis之后能自动进入redis
         SaSession session = StpUtil.getSessionByLoginId(user.getId());
         session.set("userId",user.getId());
         session.set("role",user.getRole());
