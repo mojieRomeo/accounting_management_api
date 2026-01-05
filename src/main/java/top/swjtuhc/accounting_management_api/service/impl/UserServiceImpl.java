@@ -5,9 +5,13 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import top.swjtuhc.accounting_management_api.controller.admin.req.*;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.AdminPageResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
@@ -26,6 +30,8 @@ import top.swjtuhc.accounting_management_api.util.PasswordEncoder;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
 * @author luojunjie
@@ -34,10 +40,13 @@ import java.util.List;
 */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     implements UserService{
 
     private final UserMapper userMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
+
 
 
     @Override
@@ -57,7 +66,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
          */
         StpUtil.login(user.getId());
 
-        //把登录后生成的token值以及user的信息存入sa_token自带的session，这里是jvm框架自带的内存机制，配置redis之后能自动进入redis
+        //把登录后生成的token值以及user的信息存入sa_token自带的session，这里是jvm框架自带的内存机制，配置redis之后能自动进入redis，此时jvm和redis都存了一份
         SaSession session = StpUtil.getSessionByLoginId(user.getId());
         session.set("userId",user.getId());
         session.set("role",user.getRole());
@@ -93,14 +102,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public PageResponse<AdminPageResp> adminPage(AdminPageReq req) {
         //getLoginIdAsLong()在StpUtil.login方法执行后就获取到了
         SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
+        Integer currentRole = (Integer) session.get("role");
+        //设置redis的key
+        String key = "admin:page:"+"currentRole:"+currentRole+":"+"current:"+req.getCurrent()+":"+"size:"+req.getSize()+":"+"keyword:"+req.getKeyword();
+        List<AdminPageResp> cached = (List<AdminPageResp>) redisTemplate.opsForValue().get(key);
+        //用cache.isEmpty()只判断是否为空，容易报错空指针null异常
+        if (CollectionUtils.isNotEmpty(cached)) {
+            return new PageResponse<>(req.getCurrent(), (long) cached.size(), req.getSize(), cached);
+        }
         Page<User> page = new Page<>(req.getCurrent(), req.getSize());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        if(!req.getKeyword().isEmpty()){
+        //不能用CollectionUtils.isEmpty(keyword)，因为这是collection工具方法，只能判断List，这里是String
+        if(req.getKeyword()!=null && !req.getKeyword().isEmpty()){
             wrapper.like(User::getUsername,req.getKeyword()).or().like(User::getId,req.getKeyword());
         }
         wrapper.eq(User::getStatus,StatusEnum.ENABLE.getCode());
         wrapper.orderByDesc(User::getId);
-        Integer currentRole = (Integer) session.get("role");
         if(currentRole.equals(UserRoleEnum.ADMIN.getCode())){
             wrapper.eq(User::getRole,UserRoleEnum.USER.getCode());
         } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
@@ -109,10 +126,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         Page<User> result = page(page,wrapper);
         List<User> records = result.getRecords();
         List<AdminPageResp> respList = BeanUtil.copyToList(records, AdminPageResp.class);
-        if(respList.isEmpty()){
+        if(CollectionUtils.isEmpty(respList)){
             return new PageResponse<>(result, Collections.emptyList());
         }
+        log.info("准备写入 Redis，key = {}", key);
+        //把查出来的List对象存入redis，下次查可以直接去redis，不用每次查数据库
+        redisTemplate.opsForValue().set(key,respList,300,TimeUnit.SECONDS);
         return new PageResponse<>(result, respList);
+
 
     }
 
