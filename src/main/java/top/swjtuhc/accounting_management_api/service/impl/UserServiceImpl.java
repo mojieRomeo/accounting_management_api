@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import top.swjtuhc.accounting_management_api.controller.admin.req.*;
@@ -105,35 +106,51 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         Integer currentRole = (Integer) session.get("role");
         //设置redis的key
         String key = "admin:page:"+"currentRole:"+currentRole+":"+"current:"+req.getCurrent()+":"+"size:"+req.getSize()+":"+"keyword:"+req.getKeyword();
+        //第一次查redis看有无缓存
         List<AdminPageResp> cached = (List<AdminPageResp>) redisTemplate.opsForValue().get(key);
         //用cache.isEmpty()只判断是否为空，容易报错空指针null异常
         if (CollectionUtils.isNotEmpty(cached)) {
             return new PageResponse<>(req.getCurrent(), (long) cached.size(), req.getSize(), cached);
         }
-        Page<User> page = new Page<>(req.getCurrent(), req.getSize());
-        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        //不能用CollectionUtils.isEmpty(keyword)，因为这是collection工具方法，只能判断List，这里是String
-        if(req.getKeyword()!=null && !req.getKeyword().isEmpty()){
-            wrapper.like(User::getUsername,req.getKeyword()).or().like(User::getId,req.getKeyword());
-        }
-        wrapper.eq(User::getStatus,StatusEnum.ENABLE.getCode());
-        wrapper.orderByDesc(User::getId);
-        if(currentRole.equals(UserRoleEnum.ADMIN.getCode())){
-            wrapper.eq(User::getRole,UserRoleEnum.USER.getCode());
-        } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
-            wrapper.in(User::getRole,UserRoleEnum.USER.getCode(),UserRoleEnum.ADMIN.getCode());
-        }
-        Page<User> result = page(page,wrapper);
-        List<User> records = result.getRecords();
-        List<AdminPageResp> respList = BeanUtil.copyToList(records, AdminPageResp.class);
-        if(CollectionUtils.isEmpty(respList)){
-            return new PageResponse<>(result, Collections.emptyList());
-        }
-        log.info("准备写入 Redis，key = {}", key);
-        //把查出来的List对象存入redis，下次查可以直接去redis，不用每次查数据库
-        redisTemplate.opsForValue().set(key,respList,300,TimeUnit.SECONDS);
-        return new PageResponse<>(result, respList);
+        /*
+        1.synchronized作用是一次只能让一个线程通过，避免数据库被打爆（缓存击穿）
+        2.必须写.intern()不然每次String lockKey = "lock:"+key;都会new 新对象，导致lockKey不同，即使内容相同对象也不同，synchronized ((lockKey))会导致多个线程同时进入
+        3.出synchronized会自动解锁给下一个线程，不用单独释放锁
+        */
+        synchronized (key.intern()){
+            //二次查redis，万一上个线程写了缓存没看不是白写了吗
+            List<AdminPageResp> reCached = (List<AdminPageResp>) redisTemplate.opsForValue().get(key);
+            if (CollectionUtils.isNotEmpty(reCached)) {
+                return new PageResponse<>(req.getCurrent(), (long) reCached.size(), req.getSize(), reCached);
+            }
+            Page<User> page = new Page<>(req.getCurrent(), req.getSize());
+            LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+            //不能用CollectionUtils.isEmpty(keyword)，因为这是collection工具方法，只能判断List，这里是String
+            if(req.getKeyword()!=null && !req.getKeyword().isEmpty()){
+                wrapper.like(User::getUsername,req.getKeyword()).or().like(User::getId,req.getKeyword());
+            }
+            wrapper.eq(User::getStatus,StatusEnum.ENABLE.getCode());
+            wrapper.orderByDesc(User::getId);
+            if(currentRole.equals(UserRoleEnum.ADMIN.getCode())){
+                wrapper.eq(User::getRole,UserRoleEnum.USER.getCode());
+            } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
+                wrapper.in(User::getRole,UserRoleEnum.USER.getCode(),UserRoleEnum.ADMIN.getCode());
+            }
+            Page<User> result = page(page,wrapper);
+            List<User> records = result.getRecords();
+            List<AdminPageResp> respList = BeanUtil.copyToList(records, AdminPageResp.class);
+            if(CollectionUtils.isEmpty(respList)){
+                log.info("redis缓存写入空值，key = {}", key);
+                //把空值存入redis，下次查直接返回空值，不用每次查数据库,防止查空值被打爆
+                redisTemplate.opsForValue().set(key,Collections.emptyList(),300,TimeUnit.SECONDS);
+                return new PageResponse<>(result, Collections.emptyList());
+            }
+            log.info("准备写入 Redis，key = {}", key);
+            //把查出来的List对象存入redis，下次查可以直接去redis，不用每次查数据库
+            redisTemplate.opsForValue().set(key,respList,300,TimeUnit.SECONDS);
+            return new PageResponse<>(result, respList);
 
+        }
 
     }
 
