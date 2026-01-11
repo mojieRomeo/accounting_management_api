@@ -32,6 +32,7 @@ import top.swjtuhc.accounting_management_api.util.PasswordEncoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -105,7 +106,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
         Integer currentRole = (Integer) session.get("role");
         //设置redis的key
-        String key = "admin:page:"+"currentRole:"+currentRole+":"+"current:"+req.getCurrent()+":"+"size:"+req.getSize()+":"+"keyword:"+req.getKeyword();
+        String key = "user:"+"admin:page:"+"currentRole:"+currentRole+":"+"current:"+req.getCurrent()+":"+"size:"+req.getSize()+":"+"keyword:"+req.getKeyword();
         //第一次查redis看有无缓存
         List<AdminPageResp> cached = (List<AdminPageResp>) redisTemplate.opsForValue().get(key);
         //用cache.isEmpty()只判断是否为空，容易报错空指针null异常
@@ -163,10 +164,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             user.setPassword(PasswordEncoder.encode(req.getPassword()));
             user.setRole(UserRoleEnum.USER.getCode());
             save(user);
+            deleteAdminPageCache();
         } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
             User user = BeanUtil.copyProperties(req,User.class);
             user.setPassword(PasswordEncoder.encode(req.getPassword()));
             save(user);
+            deleteAdminPageCache();
         }
     }
 
@@ -183,6 +186,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                     throw new BusinessException(ExceptionMessage.PASSWORD_EMPTY);
                 }
                 userMapper.updateById(user);
+                deleteAdminPageCache();
             }
         } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
             User user = BeanUtil.copyProperties(req, User.class);
@@ -192,15 +196,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 throw new BusinessException(ExceptionMessage.PASSWORD_EMPTY);
             }
             userMapper.updateById(user);
+            deleteAdminPageCache();
         }
     }
 
     @Override
     public void deleteUser(Long id) {
         userMapper.deleteById(id);
+        deleteAdminPageCache();
     }
 
 
+    public void deleteAdminPageCache() {
+        Set<String> keys = redisTemplate.keys("user:admin:page:*");
+        if(CollectionUtils.isNotEmpty(keys)){
+            redisTemplate.delete(keys);
+            log.info("删除了user:admin:page:为前缀的key {} 个", keys.size());
+        }
+    }
 }
 
 
