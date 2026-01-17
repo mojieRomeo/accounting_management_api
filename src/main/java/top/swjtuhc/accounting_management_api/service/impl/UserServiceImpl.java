@@ -107,11 +107,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         Integer currentRole = (Integer) session.get("role");
         //设置redis的key
         String key = "user:"+"admin:page:"+"currentRole:"+currentRole+":"+"current:"+req.getCurrent()+":"+"size:"+req.getSize()+":"+"keyword:"+req.getKeyword();
+        String totalKey = "user:"+"admin:page:"+"currentRole:"+currentRole+":"+"keyword:"+req.getKeyword();
         //第一次查redis看有无缓存
         List<AdminPageResp> cached = (List<AdminPageResp>) redisTemplate.opsForValue().get(key);
+        Number numberToTotal = (Number) redisTemplate.opsForValue().get(totalKey);
+        long total = numberToTotal == null ? 0L :numberToTotal.longValue();
         //用cache.isEmpty()只判断是否为空，容易报错空指针null异常
         if (CollectionUtils.isNotEmpty(cached)) {
-            return new PageResponse<>(req.getCurrent(), (long) cached.size(), req.getSize(), cached);
+            return new PageResponse<>(req.getCurrent(), total, req.getSize(), cached);
         }
         /*
         1.synchronized作用是一次只能让一个线程通过，避免数据库被打爆（缓存击穿）
@@ -121,8 +124,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         synchronized (key.intern()){
             //二次查redis，万一上个线程写了缓存没看不是白写了吗
             List<AdminPageResp> reCached = (List<AdminPageResp>) redisTemplate.opsForValue().get(key);
+            Number numberToRetotal = (Number) redisTemplate.opsForValue().get(totalKey);
+            long reTotal = numberToRetotal == null ? 0L :numberToRetotal.longValue();
             if (CollectionUtils.isNotEmpty(reCached)) {
-                return new PageResponse<>(req.getCurrent(), (long) reCached.size(), req.getSize(), reCached);
+                return new PageResponse<>(req.getCurrent(), reTotal, req.getSize(), reCached);
             }
             Page<User> page = new Page<>(req.getCurrent(), req.getSize());
             LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
@@ -144,11 +149,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 log.info("redis缓存写入空值，key = {}", key);
                 //把空值存入redis，下次查直接返回空值，不用每次查数据库,防止查空值被打爆
                 redisTemplate.opsForValue().set(key,Collections.emptyList(),300,TimeUnit.SECONDS);
+                log.info("redis缓存写入空值，totalKey = {}", totalKey);
+                redisTemplate.opsForValue().set(totalKey,0L,300,TimeUnit.SECONDS);
                 return new PageResponse<>(result, Collections.emptyList());
             }
             log.info("准备写入 Redis，key = {}", key);
             //把查出来的List对象存入redis，下次查可以直接去redis，不用每次查数据库
             redisTemplate.opsForValue().set(key,respList,300,TimeUnit.SECONDS);
+            log.info("准备写入redis，totalKey = {}", totalKey);
+            redisTemplate.opsForValue().set(totalKey,result.getTotal(),300,TimeUnit.SECONDS);
             return new PageResponse<>(result, respList);
 
         }

@@ -53,14 +53,27 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill>
         SaSession session = StpUtil.getSessionByLoginId(StpUtil.getLoginIdAsLong());
         Integer currentRole = (Integer) session.get("role");
         String key = "bill:"+"getBillPage:"+"currentRole:"+currentRole+":"+"current:"+req.getCurrent()+":"+"size:"+req.getSize()+":"+"costType:"+req.getCostType();
+        //totalKey的作用是为了缓存每次查的total
+        String totalKey = "bill:"+"getBillPage:"+"currentRole:"+currentRole+":"+"costType:"+req.getCostType();
         List<BillPageResp> cached = (List<BillPageResp>) redisTemplate.opsForValue().get(key);
+        /*
+        1.为啥要用Number，因为你目前redisConfig用的是GenericJackson2JsonRedisSerializer，它对数字存储一律是Integer，就算你set(totalKey,0L,300,TimeUnit.SECONDS)，也当作0存储而不是0L
+        set(totalKey,result.getTotal(),300,TimeUnit.SECONDS)的result.getTotal()原本是long，但会被当成Integer存储,所以redisTemplate.opsForValue().get(totalKey)获取到的是Integer
+        所以你要用Number，Number是Integer和Long的父类，Number numberToTotal = (Number) redisTemplate.opsForValue().get(totalKey);
+        2.long total = numberToTotal == null ? 0L :numberToTotal.longValue();不能只写成long total = numberToTotal.longValue();
+        因为当你第一次查或者totalKey过期了，numberToTotal为null，直接numberToTotal.longValue()会报空指针异常
+         */
+        Number numberToTotal = (Number) redisTemplate.opsForValue().get(totalKey);
+        long total = numberToTotal == null ? 0L :numberToTotal.longValue();
         if(CollectionUtils.isNotEmpty(cached)){
-            return new PageResponse<>(req.getCurrent(), (long) cached.size(), req.getSize(), cached);
+            return new PageResponse<>(req.getCurrent(), total, req.getSize(), cached);
         }
         synchronized (key.intern()){
             List<BillPageResp> reCached = (List<BillPageResp>) redisTemplate.opsForValue().get(key);
+            Number numberToRetotal = (Number) redisTemplate.opsForValue().get(totalKey);
+            long reTotal = numberToRetotal == null ? 0L :numberToRetotal.longValue();
             if(CollectionUtils.isNotEmpty(reCached)){
-                return new PageResponse<>(req.getCurrent(), (long) reCached.size(), req.getSize(), reCached);
+                return new PageResponse<>(req.getCurrent(), reTotal, req.getSize(), reCached);
             }
             Page<Bill> page = new Page<>(req.getCurrent(), req.getSize());
             LambdaQueryWrapper<Bill> wrapper = new LambdaQueryWrapper<>();
@@ -85,10 +98,15 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill>
             if(respList.isEmpty()){
                 log.info("redis缓存写入空值key:{}",key);
                 redisTemplate.opsForValue().set(key, Collections.emptyList(),300, TimeUnit.SECONDS);
+                log.info("redis写入空值totalKey:{}", totalKey);
+                redisTemplate.opsForValue().set(totalKey,0L,300,TimeUnit.SECONDS);
                 return new PageResponse<>(result,Collections.emptyList());
             }
             log.info("redis缓存写入key:{}",key);
             redisTemplate.opsForValue().set(key,respList,300, TimeUnit.SECONDS);
+            log.info("redis写入total总数totalKey:{}", totalKey);
+            //set(totalKey,result.getTotal(),300,TimeUnit.SECONDS);不能写respList.size()因为这个是当前页总条数，而result.getTotal()才是当前查询的总条数
+            redisTemplate.opsForValue().set(totalKey,result.getTotal(),300,TimeUnit.SECONDS);
             return new PageResponse<>(result, respList);
         }
         }
