@@ -57,9 +57,13 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill>
         String totalKey = "bill:"+"getBillPage:"+"currentRole:"+currentRole+":"+"costType:"+req.getCostType();
         List<BillPageResp> cached = (List<BillPageResp>) redisTemplate.opsForValue().get(key);
         /*
-        1.为啥要用Number，因为你目前redisConfig用的是GenericJackson2JsonRedisSerializer，它对数字存储一律是Integer，就算你set(totalKey,0L,300,TimeUnit.SECONDS)，也当作0存储而不是0L
+        1.为啥要用Number：避免java.lang.ClassCastException: class java.lang.Integer cannot be cast to class java.lang.Long
+
+        因为你目前redisConfig用的是GenericJackson2JsonRedisSerializer，它对数字存储一律是Integer，就算你set(totalKey,0L,300,TimeUnit.SECONDS)，也当作0存储而不是0L
         set(totalKey,result.getTotal(),300,TimeUnit.SECONDS)的result.getTotal()原本是long，但会被当成Integer存储,所以redisTemplate.opsForValue().get(totalKey)获取到的是Integer
         所以你要用Number，Number是Integer和Long的父类，Number numberToTotal = (Number) redisTemplate.opsForValue().get(totalKey);
+        #redis缓存数字的时候一律用Number
+
         2.long total = numberToTotal == null ? 0L :numberToTotal.longValue();不能只写成long total = numberToTotal.longValue();
         因为当你第一次查或者totalKey过期了，numberToTotal为null，直接numberToTotal.longValue()会报空指针异常
          */
@@ -88,6 +92,11 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill>
             } else if (currentRole.equals(UserRoleEnum.SUPER_ADMIN.getCode())) {
                 List<Long> userIds = userMapper.selectList(new LambdaQueryWrapper<User>().in(User::getRole,UserRoleEnum.USER.getCode(),UserRoleEnum.ADMIN.getCode())).stream().map(User::getId).collect(Collectors.toList());
                 wrapper.in(Bill::getUserId,userIds);
+                if(StringUtils.hasText(req.getCostType())){
+                    wrapper.eq(Bill::getCostType,req.getCostType());
+                }
+            }else{
+                wrapper.eq(Bill::getUserId,StpUtil.getLoginIdAsLong());
                 if(StringUtils.hasText(req.getCostType())){
                     wrapper.eq(Bill::getCostType,req.getCostType());
                 }
