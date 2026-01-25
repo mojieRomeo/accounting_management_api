@@ -3,7 +3,6 @@ package top.swjtuhc.accounting_management_api.controller.admin;
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import top.swjtuhc.accounting_management_api.controller.admin.req.*;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.AdminPageResp;
@@ -56,6 +55,12 @@ public class UserController {
     @DeleteMapping("/deleteUser/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id){
         userService.deleteUser(id);
+        return ResponseEntity.ok();
+    }
+
+    @PostMapping("/updateUserInfo")
+    public ResponseEntity<?> updateUserInfo(@RequestBody UserInfoReq req){
+        userService.updateUserInfo(req);
         return ResponseEntity.ok();
     }
 

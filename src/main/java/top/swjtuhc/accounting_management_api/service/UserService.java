@@ -30,4 +30,6 @@ public interface UserService extends IService<User> {
 
 
     void deleteUser(Long id);
+
+    void updateUserInfo(UserInfoReq req);
 }

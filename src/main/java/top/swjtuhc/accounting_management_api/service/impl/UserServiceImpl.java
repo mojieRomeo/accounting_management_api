@@ -4,13 +4,10 @@ import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
-import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import top.swjtuhc.accounting_management_api.controller.admin.req.*;
@@ -31,7 +28,6 @@ import top.swjtuhc.accounting_management_api.util.PasswordEncoder;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -213,6 +209,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public void deleteUser(Long id) {
         userMapper.deleteById(id);
         deleteAdminPageCache();
+    }
+
+    @Override
+    public void updateUserInfo(UserInfoReq req) {
+        User user = BeanUtil.copyProperties(req,User.class);
+        user.setId(StpUtil.getLoginIdAsLong());
+        user.setPassword(PasswordEncoder.encode(req.getPassword()));
+        SaSession session = StpUtil.getSessionByLoginId(user.getId());
+        System.out.println(session.get("userName"));
+        userMapper.updateById(user);
+        deleteAdminPageCache();
+        session.set("userName",user.getUsername());
+        System.out.println(session.get("userName"));
+
     }
 
 

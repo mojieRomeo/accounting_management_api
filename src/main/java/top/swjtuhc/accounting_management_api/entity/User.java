@@ -23,6 +23,8 @@ public class User {
 
     private Integer status;
 
+    private String avatarUrl;
+
     @TableField(fill = FieldFill.INSERT)
     private Date createdTime;
 
