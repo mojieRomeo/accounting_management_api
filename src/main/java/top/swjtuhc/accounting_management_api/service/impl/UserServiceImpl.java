@@ -10,6 +10,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import top.swjtuhc.accounting_management_api.controller.admin.req.*;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.AdminPageResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
@@ -26,9 +28,12 @@ import top.swjtuhc.accounting_management_api.util.ExceptionMessage;
 import top.swjtuhc.accounting_management_api.util.PageResponse;
 import top.swjtuhc.accounting_management_api.util.PasswordEncoder;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -212,16 +217,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public void updateUserInfo(UserInfoReq req) {
-        User user = BeanUtil.copyProperties(req,User.class);
+    public void updateUserInfo(String username, String password, MultipartFile avatar) throws IOException {
+        User user = new User();
         user.setId(StpUtil.getLoginIdAsLong());
-        user.setPassword(PasswordEncoder.encode(req.getPassword()));
-        SaSession session = StpUtil.getSessionByLoginId(user.getId());
-        System.out.println(session.get("userName"));
+        if(StringUtils.hasText(password)){
+            user.setPassword(PasswordEncoder.encode(password));
+        }
+        user.setUsername(username);
+        if(avatar != null && !avatar.isEmpty()){
+            String fileName = UUID.randomUUID() + "_" + avatar.getOriginalFilename();
+            File file = new File("/Users/luojunjie/Desktop/" + fileName);
+            avatar.transferTo(file);
+            String avatarUrl = "http://localhost:9090/avatar/" + fileName;
+            user.setAvatar(avatarUrl);
+        }
         userMapper.updateById(user);
         deleteAdminPageCache();
-        session.set("userName",user.getUsername());
-        System.out.println(session.get("userName"));
 
     }
 

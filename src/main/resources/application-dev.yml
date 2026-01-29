@@ -2,6 +2,12 @@ server:
   port: 9090
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+      enabled: true
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://simon996.com:5506/accounting_management_api?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
@@ -27,3 +33,4 @@ sa-token:
   is-share: true           # 多端共享同一 token
   token-style: uuid
   is-log: true
+

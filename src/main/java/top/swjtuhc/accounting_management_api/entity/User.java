@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 
 import java.util.Date;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * @TableName user
@@ -23,7 +24,8 @@ public class User {
 
     private Integer status;
 
-    private String avatarUrl;
+    //实体类不能是MultipartFile类型，否则会报错
+    private String avatar;
 
     @TableField(fill = FieldFill.INSERT)
     private Date createdTime;

@@ -3,7 +3,9 @@ package top.swjtuhc.accounting_management_api.controller.admin;
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import top.swjtuhc.accounting_management_api.controller.admin.req.*;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.AdminPageResp;
 import top.swjtuhc.accounting_management_api.controller.admin.resp.UserLoginResp;
@@ -11,6 +13,8 @@ import top.swjtuhc.accounting_management_api.controller.admin.resp.UserRegisterR
 import top.swjtuhc.accounting_management_api.service.UserService;
 import top.swjtuhc.accounting_management_api.util.PageResponse;
 import top.swjtuhc.accounting_management_api.util.ResponseEntity;
+
+import java.io.IOException;
 
 @Slf4j
 @RestController
@@ -58,9 +62,14 @@ public class UserController {
         return ResponseEntity.ok();
     }
 
-    @PostMapping("/updateUserInfo")
-    public ResponseEntity<?> updateUserInfo(@RequestBody UserInfoReq req){
-        userService.updateUserInfo(req);
+    @PostMapping(value = "/updateUserInfo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    /*
+    Multpartfile类型不能用@RequestBody接收，需要用@RequestParam接收，因此不能用@RequestBody userInfoReq
+     */
+    public ResponseEntity<?> updateUserInfo(@RequestParam String username,
+                                            @RequestParam String password,
+                                             @RequestParam(required = false) MultipartFile avatar) throws IOException {
+        userService.updateUserInfo(username,password,avatar);
         return ResponseEntity.ok();
     }
 
