@@ -34,5 +34,5 @@ public interface UserService extends IService<User> {
 
     void deleteUser(Long id);
 
-    void updateUserInfo(String username, String password, MultipartFile avatar) throws IOException;
+    String updateUserInfo(String username, String password, MultipartFile avatar) throws IOException;
 }

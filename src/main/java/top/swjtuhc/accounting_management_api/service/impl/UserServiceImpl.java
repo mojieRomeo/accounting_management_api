@@ -77,7 +77,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         session.set("tokenName",StpUtil.getTokenName());
         session.set("tokenValue",StpUtil.getTokenValue());
 
-        UserLoginResp resp=BeanUtil.copyProperties(user, UserLoginResp.class);
+        UserLoginResp resp = BeanUtil.copyProperties(user, UserLoginResp.class);
         resp.setTokenName(StpUtil.getTokenInfo().getTokenName());
         resp.setTokenValue(StpUtil.getTokenInfo().getTokenValue());
         return resp;
@@ -217,22 +217,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public void updateUserInfo(String username, String password, MultipartFile avatar) throws IOException {
+    public String updateUserInfo(String username, String password, MultipartFile avatar) throws IOException {
         User user = new User();
         user.setId(StpUtil.getLoginIdAsLong());
         if(StringUtils.hasText(password)){
             user.setPassword(PasswordEncoder.encode(password));
         }
         user.setUsername(username);
+        String avatarUrl = null;
         if(avatar != null && !avatar.isEmpty()){
             String fileName = UUID.randomUUID() + "_" + avatar.getOriginalFilename();
             File file = new File("/Users/luojunjie/Desktop/" + fileName);
             avatar.transferTo(file);
-            String avatarUrl = "http://localhost:9090/avatar/" + fileName;
+            avatarUrl = "http://localhost:9090/avatar/" + fileName;
             user.setAvatar(avatarUrl);
         }
         userMapper.updateById(user);
         deleteAdminPageCache();
+        return avatarUrl;
 
     }
 

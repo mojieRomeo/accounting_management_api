@@ -16,6 +16,8 @@ public class UserLoginResp {
 
     private Integer status;
 
+    private String avatar;
+
     private Date createdTime;
 
     private Date updatedTime;

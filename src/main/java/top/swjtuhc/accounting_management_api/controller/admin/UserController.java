@@ -66,11 +66,10 @@ public class UserController {
     /*
     Multpartfile类型不能用@RequestBody接收，需要用@RequestParam接收，因此不能用@RequestBody userInfoReq
      */
-    public ResponseEntity<?> updateUserInfo(@RequestParam String username,
+    public ResponseEntity<String> updateUserInfo(@RequestParam String username,
                                             @RequestParam String password,
                                              @RequestParam(required = false) MultipartFile avatar) throws IOException {
-        userService.updateUserInfo(username,password,avatar);
-        return ResponseEntity.ok();
+        return ResponseEntity.ok(userService.updateUserInfo(username,password,avatar));
     }
 
 
